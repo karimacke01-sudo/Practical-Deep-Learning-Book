@@ -1,0 +1,42 @@
+
+name: Build iOS CameraApp
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Get source code
+        uses: actions/checkout@v4
+
+      - name: Download Core ML models
+        run: |
+          cd code/chapter-11/CameraApp
+          chmod +x download-coreml-models.sh
+          ./download-coreml-models.sh
+
+      - name: Build iOS Simulator app
+        run: |
+          cd code/chapter-11/CameraApp
+          xcodebuild \
+            -project CameraApp.xcodeproj \
+            -scheme CameraApp \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Save build result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CameraApp-build
+          path: ${{ runner.temp }}/DerivedData/Build/Products/Debug-iphonesimulator/
+          if-no-files-found: warn
