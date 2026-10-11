@@ -21,22 +21,29 @@ jobs:
           chmod +x download-coreml-models.sh
           ./download-coreml-models.sh
 
-      - name: Build iOS Simulator app
+      - name: Build iPhone app
         run: |
           cd code/chapter-11/CameraApp
           xcodebuild \
             -project CameraApp.xcodeproj \
             -scheme CameraApp \
-            -sdk iphonesimulator \
+            -sdk iphoneos \
             -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Save build result
-        if: always()
+      - name: Package IPA
+        run: |
+          APP_PATH="$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphoneos/CameraApp.app"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/CameraApp.app"
+          cd "$RUNNER_TEMP"
+          zip -qry CameraApp.ipa Payload
+
+      - name: Save IPA file
         uses: actions/upload-artifact@v4
         with:
-          name: CameraApp-build
-          path: ${{ runner.temp }}/DerivedData/Build/Products/Debug-iphonesimulator/
-          if-no-files-found: warn
+          name: CameraApp-IPA
+          path: ${{ runner.temp }}/CameraApp.ipa
+          if-no-files-found: error
